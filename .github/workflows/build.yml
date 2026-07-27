@@ -93,8 +93,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          find platforms/android -name '*.apk' -path '*release*' -exec cp {} dist/MathsTrainer.apk \;
-          find platforms/android -name '*.aab' -path '*release*' -exec cp {} dist/MathsTrainer.aab \;
+
+          # Exclut explicitement les APK non signés produits comme intermédiaires,
+          # sinon ils peuvent écraser l'APK signé et donner un fichier ininstallable.
+          APK=$(find platforms/android -name '*.apk' -path '*release*' ! -name '*unsigned*' | head -1)
+          AAB=$(find platforms/android -name '*.aab' -path '*release*' | head -1)
+
+          [ -n "$APK" ] || { echo "::error::Aucun APK signé trouvé"; exit 1; }
+          [ -n "$AAB" ] || { echo "::error::Aucun AAB trouvé"; exit 1; }
+
+          cp "$APK" dist/MathsTrainer.apk
+          cp "$AAB" dist/MathsTrainer.aab
           ls -lh dist
 
       - name: Upload APK

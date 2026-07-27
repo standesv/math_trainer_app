@@ -29,9 +29,12 @@
 
     <engine name="android" spec="^15.1.0" />
 
+    <!-- PLAY_SERVICES_VERSION n'est volontairement pas surchargé : le plugin
+         utilise sa valeur par défaut (20.6.0), la seule contre laquelle son
+         code Java compile. Le SDK Ads 23.0.0 a supprimé MobileAds.getVersionString()
+         et AdSize.SMART_BANNER, tous deux utilisés par admob-plus 1.x. -->
     <plugin name="admob-plus-cordova" spec="^1.28.0">
         <variable name="APP_ID_ANDROID" value="ca-app-pub-3209259150498249~7379927993" />
         <variable name="APP_ID_IOS" value="ca-app-pub-3209259150498249~7379927993" />
-        <variable name="PLAY_SERVICES_VERSION" value="23.6.0" />
     </plugin>
 </widget>
