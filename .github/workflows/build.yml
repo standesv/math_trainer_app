@@ -1,0 +1,103 @@
+name: Build APK & AAB
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Set up Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v2
+      with:
+        api-levels: '31,32,33,34'
+        ndk-version: '25.2.9519653'
+
+    - name: Install Cordova
+      run: npm install -g cordova
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Add Android platform
+      run: cordova platform add android
+
+    - name: Create keystore for release signing
+      run: |
+        mkdir -p ~/.android
+        keytool -genkey -v -keystore ~/.android/release.keystore \
+          -alias mathtrainer -keyalg RSA -keysize 2048 -validity 10000 \
+          -storepass mathtrainer2024 -keypass mathtrainer2024 \
+          -dname "CN=Stan Desvoye, O=Personal, C=FR"
+
+    - name: Build APK
+      run: cordova build android --release
+      env:
+        KEYSTORE: ~/.android/release.keystore
+        KEYSTORE_PASSWORD: mathtrainer2024
+        KEYSTORE_ALIAS: mathtrainer
+        KEYSTORE_ALIAS_PASSWORD: mathtrainer2024
+
+    - name: Sign APK
+      run: |
+        APK_PATH="platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk"
+        SIGNED_APK="platforms/android/app/build/outputs/apk/release/app-release.apk"
+
+        jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
+          -keystore ~/.android/release.keystore \
+          -storepass mathtrainer2024 \
+          -keypass mathtrainer2024 \
+          "$APK_PATH" mathtrainer
+
+        zipalign -v 4 "$APK_PATH" "$SIGNED_APK"
+
+    - name: Build AAB
+      run: |
+        cd platforms/android
+        ./gradlew bundleRelease \
+          -Pandroid.useAndroidX=true \
+          -Pkeystore=~/.android/release.keystore \
+          -Pkeystore_password=mathtrainer2024 \
+          -Pkey_alias=mathtrainer \
+          -Pkey_password=mathtrainer2024
+
+    - name: Upload APK to Release
+      uses: actions/upload-artifact@v3
+      with:
+        name: APK
+        path: platforms/android/app/build/outputs/apk/release/app-release.apk
+
+    - name: Upload AAB to Release
+      uses: actions/upload-artifact@v3
+      with:
+        name: AAB
+        path: platforms/android/app/build/outputs/bundle/release/app-release.aab
+
+    - name: Create Release
+      uses: actions/create-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false

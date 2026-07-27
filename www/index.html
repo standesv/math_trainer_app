@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b5cff" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Entraînement additions et soustractions - enfant - profils - progression" />
+
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.v20.css" />
+
+  <title>Maths Trainer</title>
+</head>
+
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">±</div>
+        <div class="titles">
+          <h1>Maths Trainer</h1>
+          <p class="subtitle" id="subtitle">Additions & soustractions <span id="versionTag" class="version-tag">V20</span><span id="screenTag" class="version-tag" style="margin-left:6px;">home</span></p>
+        </div>
+      </div>
+      <button id="installBtn" class="btn btn-ghost" hidden>Installer</button>
+    </header>
+
+    <main class="app-main" id="appMain">
+      <!-- HOME -->
+      <section id="screen-home" class="screen">
+        <div class="card card-grow">
+          <div class="field">
+            <label for="profileSelect">Qui joue ?</label>
+            <div class="row">
+              <select id="profileSelect" class="input"></select>
+              <button type="button" id="addProfileBtn" class="btn btn-ghost btn-icon" aria-label="Ajouter un profil">＋</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Choisis ton jeu</label>
+            <div class="segmented segmented-big" role="group" aria-label="Mode">
+              <button type="button" class="seg active" data-mode="mix">Mix</button>
+              <button type="button" class="seg" data-mode="add">+</button>
+              <button type="button" class="seg" data-mode="sub">−</button>
+              <button type="button" class="seg" data-mode="tables">Tables</button>
+            </div>
+            <small id="modeHint">Mix = additions et soustractions</small>
+          </div>
+
+          <button id="startBtn" class="btn btn-primary btn-xxl">▶️ Démarrer</button>
+
+          <div class="spacer"></div>
+
+          <p class="muted tip">Astuce : active la progression (0–10, puis 0–20…) dans ⚙️ Réglages.</p>
+        </div>
+      </section>
+
+      <!-- GAME -->
+      <section id="screen-game" class="screen" hidden>
+        <div class="card card-grow">
+          <div class="row-between">
+            <div>
+              <h2>Question <span id="qIndex">1</span>/<span id="qTotal">10</span></h2>
+            </div>
+            <div class="pill">
+              ✅ <span id="okCount">0</span> &nbsp;|&nbsp; ❌ <span id="errCount">0</span>
+            </div>
+          </div>
+
+          <div class="row-between row-tight">
+            <div class="pill pill-mono">⏱️ <span id="timer">00:00</span></div>
+            <div class="pill pill-mono">⏱️ <span id="avgPerQ">0.0</span> s/question</div>
+          </div>
+
+          <div class="problem" aria-live="polite">
+            <span id="a">0</span>
+            <span id="op">+</span>
+            <span id="b">0</span>
+            <span class="eq">=</span>
+            <span class="box">
+              <input id="answerInput" inputmode="numeric" autocomplete="off" />
+            </span>
+          </div>
+
+          <div class="feedback" id="feedback" aria-live="polite"></div>
+
+          <div class="actions actions-big">
+            <button id="validateBtn" class="btn btn-primary btn-xxl">✅ Valider</button>
+            <button id="skipBtn" class="btn btn-ghost btn-xxl">⏭️ Passer</button>
+            <button id="stopBtn" class="btn btn-danger btn-xxl">⏹️ Stop</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCORES -->
+      <section id="screen-scores" class="screen" hidden>
+        <div class="card card-grow">
+          <div class="row-between">
+            <h2 style="margin:0;">Derniers scores</h2>
+            <span class="muted">Profil : <span id="profileLabel">—</span></span>
+          </div>
+
+          <div id="scoresList" class="scores-list"></div>
+
+          <div class="spacer"></div>
+
+          <button id="resetHistoryBtn" class="btn btn-ghost btn-xxl">🧽 Effacer les scores</button>
+        </div>
+      </section>
+
+      <!-- RESULTS -->
+      <section id="screen-results" class="screen" hidden>
+        <div class="card card-grow">
+          <h2>Résultat</h2>
+
+          <div class="summary">
+            <div class="metric">
+              <div class="metric-label">Réussites</div>
+              <div class="metric-value" id="finalOk">0</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Erreurs</div>
+              <div class="metric-value" id="finalErr">0</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Score</div>
+              <div class="metric-value" id="finalScore">0%</div>
+            </div>
+          </div>
+
+          <p id="timeSummary" class="muted" style="margin-top:10px;"></p>
+
+          <details class="details">
+            <summary>Voir le corrigé</summary>
+            <div id="reviewList" class="review"></div>
+          </details>
+
+          <div class="actions actions-big">
+            <button id="playAgainBtn" class="btn btn-primary btn-xxl">🔁 Rejouer</button>
+            <button id="backHomeBtn" class="btn btn-ghost btn-xxl">🏠 Accueil</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav" aria-label="Menu">
+      <button class="nav-btn active" id="navHome" type="button" aria-label="Accueil">
+        <span class="nav-ico">🏠</span><span class="nav-txt">Accueil</span>
+      </button>
+      <button class="nav-btn" id="navPlay" type="button" aria-label="Jouer">
+        <span class="nav-ico">▶️</span><span class="nav-txt">Jouer</span>
+      </button>
+      <button class="nav-btn" id="navScores" type="button" aria-label="Scores">
+        <span class="nav-ico">🏆</span><span class="nav-txt">Scores</span>
+      </button>
+      <button class="nav-btn" id="navSettings" type="button" aria-label="Réglages">
+        <span class="nav-ico">⚙️</span><span class="nav-txt">Réglages</span>
+      </button>
+    </nav>
+
+    <!-- Bannière Publicité -->
+    <div id="adBanner" style="text-align:center; background:#f5f5f5; padding:10px; border-top:1px solid #ddd; min-height:50px;">
+      <!-- La bannière pub AdMob s'affichera ici -->
+    </div>
+
+    <!-- Settings Bottom Sheet -->
+    <div id="settingsModal" class="modal" aria-hidden="true" role="dialog" aria-label="Réglages">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-sheet" role="document">
+        <div class="modal-header">
+          <h2 style="margin:0;">Réglages</h2>
+          <button class="btn btn-ghost btn-icon" id="closeSettingsBtn" aria-label="Fermer">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="field">
+            <label for="questionsCount">Nombre de questions</label>
+            <input id="questionsCount" class="input" type="number" min="5" max="50" step="1" value="10" />
+          </div>
+
+          <div class="field">
+            <label for="maxValue">Niveau (0 → max)</label>
+            <input id="maxValue" class="input" type="number" min="5" max="200" step="1" value="20" />
+            <small>Si “Progression” est activée, ce max est plafonné.</small>
+          </div>
+
+          <label class="check">
+            <input id="allowNegative" type="checkbox" />
+            Autoriser résultats négatifs (soustraction)
+          </label>
+
+          <details class="details details-compact">
+            <summary>Tables</summary>
+            <div class="subgrid">
+              <label class="check">
+                <input id="tablesEnabled" type="checkbox" />
+                Activer “Tables”
+              </label>
+
+              <div class="field">
+                <label for="tableNumber">Table</label>
+                <input id="tableNumber" class="input" type="number" min="1" max="20" step="1" value="7" />
+              </div>
+
+              <div class="field">
+                <label for="tablesOp">Opération</label>
+                <select id="tablesOp" class="input">
+                  <option value="add">Addition</option>
+                  <option value="sub">Soustraction</option>
+                </select>
+              </div>
+            </div>
+          </details>
+
+          <details class="details details-compact">
+            <summary>Progression</summary>
+            <div class="subgrid">
+              <label class="check">
+                <input id="progressEnabled" type="checkbox" checked />
+                Activer la progression
+              </label>
+
+              <div class="pill pill-mono">
+                Niveau débloqué : <span id="unlockedMax">10</span>
+              </div>
+
+              <button type="button" id="resetProgressBtn" class="btn btn-ghost btn-xxl">Réinitialiser progression</button>
+            </div>
+          </details>
+
+          <details class="details details-compact">
+            <summary>Effets</summary>
+            <div class="subgrid">
+              <label class="check">
+                <input id="soundEnabled" type="checkbox" checked />
+                Sons
+              </label>
+              <label class="check">
+                <input id="confettiEnabled" type="checkbox" checked />
+                Confettis
+              </label>
+            </div>
+          </details>
+
+          <details class="details details-compact">
+            <summary>Profils</summary>
+            <div class="subgrid">
+              <button type="button" id="renameProfileBtn" class="btn btn-ghost btn-xxl">Renommer profil</button>
+              <button type="button" id="deleteProfileBtn" class="btn btn-danger btn-xxl">Supprimer profil</button>
+            </div>
+          </details>
+        </div>
+
+        <div class="modal-footer">
+          <button id="saveSettingsBtn" class="btn btn-primary btn-xxl">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // V15: ultra-robust routing (works even if some listeners fail)
+  (function(){
+    function routeTo(name){
+      try{ location.hash = name ? ('#'+name) : '#home'; }catch(e){}
+      // If app router exists, call it
+      try{
+        if (typeof window.showScreen === 'function') window.showScreen(name);
+      }catch(e){}
+    }
+    window.__routeTo = routeTo;
+
+    // Delegated click (captures taps even if element gets re-rendered)
+    document.addEventListener('click', function(e){
+      var b = e.target && e.target.closest ? e.target.closest('.nav-btn') : null;
+      if(!b) return;
+      if (b.id === 'navScores') { e.preventDefault(); routeTo('scores'); }
+      if (b.id === 'navHome') { e.preventDefault(); routeTo('home'); }
+      if (b.id === 'navPlay') { e.preventDefault(); routeTo('game'); }
+      if (b.id === 'navSettings') { /* leave to app */ }
+    }, true);
+
+    window.addEventListener('hashchange', function(){
+      var h = (location.hash||'#home').replace('#','');
+      try{ if (typeof window.showScreen === 'function') window.showScreen(h); }catch(e){}
+    });
+  })();
+  </script>
+
+  <script src="app.v20.js"></script>
+  <script src="js/admob.js"></script>
+  <script src="cordova.js"></script>
+</body>
+</html>

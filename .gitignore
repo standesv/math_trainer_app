@@ -1,0 +1,39 @@
+# Cordova
+/platforms/
+/plugins/
+node_modules/
+
+# Build outputs
+*.apk
+*.aab
+*.jks
+*.keystore
+*.p12
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Gradle
+.gradle/
+build/
+*.gradle
+
+# Android Studio
+*.iml
+local.properties
+
+# Environment variables
+.env
+.env.local
+
+# Testing
+coverage/
+.nyc_output/
