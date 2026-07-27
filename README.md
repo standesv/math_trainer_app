@@ -52,26 +52,34 @@ cordova platform add android
 ### Build Local
 ```bash
 # Build APK
-cordova build android --release
+npm run build:apk
 
 # Build AAB
-cd platforms/android
-./gradlew bundleRelease
+npm run build:aab
 ```
+
+Prérequis local : Node 22, Java 21, Android SDK 36.
 
 ## Déploiement Automatique
 
-Le projet utilise GitHub Actions pour compiler automatiquement les APK et AAB à chaque push.
+GitHub Actions compile l'APK et l'AAB à chaque push sur `main`.
+Un push de tag `v*` publie en plus une Release avec les deux fichiers.
 
-Voir `.github/workflows/build.yml` pour les détails.
+Voir `.github/workflows/build.yml` et `DEPLOYMENT.md`.
 
 ## Configuration AdMob
 
-Les IDs AdMob sont configurés dans `www/js/admob.js`:
-- **App ID**: ca-app-pub-3209259150498249~7379927993
-- **Banner ID**: ca-app-pub-3209259150498249/5742724335
+Plugin utilisé : [`admob-plus-cordova`](https://github.com/admob-plus/admob-plus) (activement maintenu).
 
-Pour modifier, éditer le fichier `www/js/admob.js`.
+| Élément | Valeur | Emplacement |
+|---|---|---|
+| App ID | `ca-app-pub-3209259150498249~7379927993` | `config.xml` (variable `APP_ID_ANDROID`) |
+| Banner ID | `ca-app-pub-3209259150498249/5742724335` | `www/js/admob.js` |
+
+La bannière s'affiche en bas de l'écran, au-dessus de la barre de navigation.
+En développement (`http://localhost`), l'ID de test officiel Google est utilisé
+automatiquement afin de ne pas fausser les statistiques ni risquer une
+suspension du compte AdMob.
 
 ## License
 

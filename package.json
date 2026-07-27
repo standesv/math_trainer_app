@@ -1,24 +1,33 @@
 {
   "name": "com.standesv.mathtrainer",
-  "displayName": "Math Trainer",
+  "displayName": "Maths Trainer",
   "version": "1.0.0",
-  "description": "A sample Apache Cordova application that responds to the deviceready event.",
+  "description": "Entrainement aux additions et soustractions pour enfants",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:apk": "cordova build android --release -- --packageType=apk",
+    "build:aab": "cordova build android --release -- --packageType=bundle"
   },
   "keywords": [
     "ecosystem:cordova"
   ],
-  "author": "Apache Cordova Team",
-  "license": "Apache-2.0",
+  "author": "Stan Desvoye <standesv@gmail.com>",
+  "license": "MIT",
   "devDependencies": {
+    "cordova": "^12.0.0",
     "cordova-android": "^15.1.0",
-    "cordova-plugin-admob-free": "^0.27.0"
+    "admob-plus-cordova": "^1.28.0"
   },
   "cordova": {
+    "platforms": [
+      "android"
+    ],
     "plugins": {
-      "cordova-plugin-admob-free": {}
+      "admob-plus-cordova": {
+        "APP_ID_ANDROID": "ca-app-pub-3209259150498249~7379927993",
+        "APP_ID_IOS": "ca-app-pub-3209259150498249~7379927993",
+        "PLAY_SERVICES_VERSION": "23.6.0"
+      }
     }
   }
 }

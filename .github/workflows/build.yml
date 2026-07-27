@@ -2,102 +2,120 @@ name: Build APK & AAB
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [main]
+    tags: ['v*']
   pull_request:
-    branches: [ main, master ]
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
-    - name: Set up Java
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '11'
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
 
-    - name: Set up Android SDK
-      uses: android-actions/setup-android@v2
-      with:
-        api-levels: '31,32,33,34'
-        ndk-version: '25.2.9519653'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-    - name: Install Cordova
-      run: npm install -g cordova
+      - name: Install dependencies
+        run: npm install
 
-    - name: Install dependencies
-      run: npm install
+      - name: Prepare keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYSTORE_PATH="$RUNNER_TEMP/release.keystore"
 
-    - name: Add Android platform
-      run: cordova platform add android
+          if [ -n "${KEYSTORE_BASE64:-}" ]; then
+            echo "Keystore fourni via les secrets du dépôt."
+            echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+            STORE_PASS="$STORE_PASSWORD"
+            ALIAS="$KEY_ALIAS"
+            KEY_PASS="$KEY_PASSWORD"
+          else
+            echo "::warning::Aucun keystore dans les secrets - génération d'un keystore éphémère."
+            echo "::warning::Cet APK ne peut PAS servir à mettre à jour une installation existante ni à publier sur le Play Store."
+            STORE_PASS="mathtrainer"
+            ALIAS="mathtrainer"
+            KEY_PASS="mathtrainer"
+            keytool -genkeypair -v \
+              -keystore "$KEYSTORE_PATH" \
+              -alias "$ALIAS" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$STORE_PASS" -keypass "$KEY_PASS" \
+              -dname "CN=Stan Desvoye, O=Personal, C=FR"
+          fi
 
-    - name: Create keystore for release signing
-      run: |
-        mkdir -p ~/.android
-        keytool -genkey -v -keystore ~/.android/release.keystore \
-          -alias mathtrainer -keyalg RSA -keysize 2048 -validity 10000 \
-          -storepass mathtrainer2024 -keypass mathtrainer2024 \
-          -dname "CN=Stan Desvoye, O=Personal, C=FR"
+          cat > build.json <<EOF
+          {
+            "android": {
+              "release": {
+                "keystore": "$KEYSTORE_PATH",
+                "storePassword": "$STORE_PASS",
+                "alias": "$ALIAS",
+                "password": "$KEY_PASS",
+                "keystoreType": "jks"
+              }
+            }
+          }
+          EOF
 
-    - name: Build APK
-      run: cordova build android --release
-      env:
-        KEYSTORE: ~/.android/release.keystore
-        KEYSTORE_PASSWORD: mathtrainer2024
-        KEYSTORE_ALIAS: mathtrainer
-        KEYSTORE_ALIAS_PASSWORD: mathtrainer2024
+      - name: Add Android platform
+        run: npx cordova platform add android --no-telemetry
 
-    - name: Sign APK
-      run: |
-        APK_PATH="platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk"
-        SIGNED_APK="platforms/android/app/build/outputs/apk/release/app-release.apk"
+      - name: Build APK (release, signed)
+        run: npx cordova build android --release --no-telemetry -- --packageType=apk
 
-        jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
-          -keystore ~/.android/release.keystore \
-          -storepass mathtrainer2024 \
-          -keypass mathtrainer2024 \
-          "$APK_PATH" mathtrainer
+      - name: Build AAB (release, signed)
+        run: npx cordova build android --release --no-telemetry -- --packageType=bundle
 
-        zipalign -v 4 "$APK_PATH" "$SIGNED_APK"
+      - name: Collect artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          find platforms/android -name '*.apk' -path '*release*' -exec cp {} dist/MathsTrainer.apk \;
+          find platforms/android -name '*.aab' -path '*release*' -exec cp {} dist/MathsTrainer.aab \;
+          ls -lh dist
 
-    - name: Build AAB
-      run: |
-        cd platforms/android
-        ./gradlew bundleRelease \
-          -Pandroid.useAndroidX=true \
-          -Pkeystore=~/.android/release.keystore \
-          -Pkeystore_password=mathtrainer2024 \
-          -Pkey_alias=mathtrainer \
-          -Pkey_password=mathtrainer2024
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MathsTrainer-APK
+          path: dist/MathsTrainer.apk
+          if-no-files-found: error
 
-    - name: Upload APK to Release
-      uses: actions/upload-artifact@v3
-      with:
-        name: APK
-        path: platforms/android/app/build/outputs/apk/release/app-release.apk
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: MathsTrainer-AAB
+          path: dist/MathsTrainer.aab
+          if-no-files-found: error
 
-    - name: Upload AAB to Release
-      uses: actions/upload-artifact@v3
-      with:
-        name: AAB
-        path: platforms/android/app/build/outputs/bundle/release/app-release.aab
-
-    - name: Create Release
-      uses: actions/create-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }}
-        draft: false
-        prerelease: false
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/MathsTrainer.apk
+            dist/MathsTrainer.aab
+          generate_release_notes: true

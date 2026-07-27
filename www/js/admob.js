@@ -1,67 +1,56 @@
-// Configuration AdMob
-const ADMOB_CONFIG = {
-  APP_ID: 'ca-app-pub-3209259150498249~7379927993',
-  BANNER_ID: 'ca-app-pub-3209259150498249/5742724335'
-};
+/* AdMob - bannière en bas d'écran (admob-plus-cordova) */
+(function () {
+  'use strict';
 
-// Initialiser AdMob
-function initAdMob() {
-  if (typeof admob === 'undefined') {
-    console.warn('AdMob plugin not available');
-    return;
+  var BANNER_AD_UNIT_ID = 'ca-app-pub-3209259150498249/5742724335';
+
+  // ID de test officiel Google : utilisé automatiquement en debug pour
+  // ne pas polluer les statistiques et éviter une suspension de compte.
+  var TEST_BANNER_AD_UNIT_ID = 'ca-app-pub-3940256099942544/6300978111';
+
+  var banner = null;
+
+  function isDebugBuild() {
+    // cordova.platformId existe sur device ; BuildInfo n'est pas installé,
+    // on se base donc sur l'absence de minification / hostname localhost.
+    return location.protocol === 'http:' || location.hostname === 'localhost';
   }
 
-  // Configuration initiale
-  admob.setAppMuted(false);
-  admob.setAppVolume(1);
+  function showBanner() {
+    if (typeof admob === 'undefined') {
+      console.warn('[AdMob] plugin indisponible - bannière ignorée');
+      return;
+    }
 
-  // Afficher la bannière pub
-  showBannerAd();
-}
+    var adUnitId = isDebugBuild() ? TEST_BANNER_AD_UNIT_ID : BANNER_AD_UNIT_ID;
 
-// Afficher la bannière pub
-function showBannerAd() {
-  if (typeof admob === 'undefined') return;
-
-  const bannerConfig = {
-    id: ADMOB_CONFIG.BANNER_ID,
-    isTesting: false, // Changer à true pour les tests
-    autoShow: true
-  };
-
-  admob.banner.config(bannerConfig);
-
-  admob.banner.prepare()
-    .then(function() {
-      return admob.banner.show();
-    })
-    .then(function() {
-      console.log('Bannière AdMob affichée');
-    })
-    .catch(function(err) {
-      console.error('Erreur AdMob:', err);
-    });
-}
-
-// Masquer la bannière pub
-function hideBannerAd() {
-  if (typeof admob !== 'undefined') {
-    admob.banner.hide();
+    admob
+      .start()
+      .then(function () {
+        banner = new admob.BannerAd({
+          adUnitId: adUnitId,
+          position: 'bottom'
+        });
+        return banner.show();
+      })
+      .then(function () {
+        // Réserve la place sous la barre de navigation pour ne rien masquer.
+        document.body.classList.add('has-ad-banner');
+        console.log('[AdMob] bannière affichée');
+      })
+      .catch(function (err) {
+        console.error('[AdMob] erreur :', err);
+      });
   }
-}
 
-// Initialiser lors du chargement de l'app
-document.addEventListener('DOMContentLoaded', function() {
-  // Attendre que Cordova soit prêt
-  if (document.readyState === 'loading') {
-    document.addEventListener('deviceready', initAdMob);
-  } else {
-    // Cordova est déjà chargé
-    setTimeout(initAdMob, 500);
+  function hideBanner() {
+    if (!banner) return;
+    banner.hide().catch(function () {});
+    document.body.classList.remove('has-ad-banner');
   }
-});
 
-// Fallback pour les tests en web
-if (!window.cordova) {
-  console.log('App web - AdMob simulé');
-}
+  document.addEventListener('deviceready', showBanner, false);
+
+  // Exposé pour un usage manuel éventuel (ex. version premium sans pub)
+  window.MathTrainerAds = { show: showBanner, hide: hideBanner };
+})();

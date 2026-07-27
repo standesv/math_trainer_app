@@ -1,21 +1,37 @@
 <?xml version='1.0' encoding='utf-8'?>
 <widget id="com.standesv.mathtrainer" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>Maths Trainer</name>
-    <description>Application d'entraînement aux additions et soustractions pour enfants</description>
+    <description>Application d'entrainement aux additions et soustractions pour enfants</description>
     <author email="standesv@gmail.com" href="https://github.com/standesv">Stan Desvoye</author>
+
     <content src="index.html" />
-    <access origin="*" />
+
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
     <allow-intent href="tel:*" />
     <allow-intent href="sms:*" />
     <allow-intent href="mailto:*" />
     <allow-intent href="geo:*" />
+
     <platform name="android">
         <allow-intent href="market:*" />
+        <icon density="ldpi" src="www/icon-192.png" />
+        <icon density="mdpi" src="www/icon-192.png" />
+        <icon density="hdpi" src="www/icon-192.png" />
+        <icon density="xhdpi" src="www/icon-512.png" />
+        <icon density="xxhdpi" src="www/icon-512.png" />
+        <icon density="xxxhdpi" src="www/icon-512.png" />
     </platform>
+
     <preference name="Orientation" value="portrait" />
-    <preference name="AndroidXEnabled" value="true" />
-    <preference name="GradlePluginGoogleServicesEnabled" value="true" />
-    <preference name="GradlePluginGoogleServicesVersion" value="4.3.15" />
+    <preference name="android-minSdkVersion" value="24" />
+    <preference name="AndroidInsetsMode" value="native" />
+
+    <engine name="android" spec="^15.1.0" />
+
+    <plugin name="admob-plus-cordova" spec="^1.28.0">
+        <variable name="APP_ID_ANDROID" value="ca-app-pub-3209259150498249~7379927993" />
+        <variable name="APP_ID_IOS" value="ca-app-pub-3209259150498249~7379927993" />
+        <variable name="PLAY_SERVICES_VERSION" value="23.6.0" />
+    </plugin>
 </widget>

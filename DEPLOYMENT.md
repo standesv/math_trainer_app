@@ -1,103 +1,95 @@
 # Guide de Déploiement
 
-## 1. Créer un Repository sur GitHub
-
-Si vous n'avez pas déjà créé le repository:
-
-1. Allez sur https://github.com/new
-2. Nommez-le `math_trainer_app`
-3. **Ne pas** initialiser avec README (nous en avons déjà un)
-4. Créez le repository
-
-## 2. Pousser le code local vers GitHub
+## 1. Pousser le code
 
 ```bash
 cd ~/Downloads/math_trainer_app
-
-# Ajouter le remote GitHub (remplacer YOUR_USERNAME par votre username)
-git remote add origin https://github.com/YOUR_USERNAME/math_trainer_app.git
-
-# Renommer la branche master en main (optionnel)
-git branch -M main
-
-# Pousser le code
-git push -u origin main
-```
-
-## 3. Configurer les GitHub Actions
-
-Le workflow est déjà configuré dans `.github/workflows/build.yml`.
-
-Lors du prochain push, GitHub Actions:
-1. Installera les dépendances
-2. Compilera la plateforme Android
-3. Générera l'APK et l'AAB
-4. Les mettra à disposition en téléchargement
-
-## 4. Télécharger APK & AAB
-
-Après le build (quelques minutes):
-
-1. Allez sur votre repository
-2. Cliquez sur **Actions**
-3. Sélectionnez le dernier workflow
-4. Sous **Artifacts**, téléchargez:
-   - `APK` - fichier .apk pour installer directement
-   - `AAB` - fichier .aab pour Google Play Store
-
-## 5. Installer sur votre téléphone
-
-### Via APK:
-1. Transférer le fichier APK sur votre téléphone
-2. Ouvrir le gestionnaire de fichiers
-3. Taper sur le fichier APK
-4. Accepter l'installation
-
-### Via Google Play Store:
-1. Utiliser l'AAB pour mettre en place une version de test interne dans la Google Play Console
-2. Inviter des testeurs
-3. Ou publier directement sur le Play Store
-
-## 6. Mise à jour
-
-Pour mettre à jour l'application:
-
-```bash
-# Modifier les fichiers (www/app.v20.js, www/styles.v20.css, etc.)
-
-# Commit et push
-git add .
-git commit -m "Mise à jour v1.x.x"
+rm -f package-lock.json
+git add -A
+git commit -m "Modernise le build Android et remplace le plugin AdMob"
 git push
 ```
 
-GitHub Actions recompilera automatiquement l'APK et l'AAB.
+GitHub Actions démarre automatiquement et produit :
 
-## 7. Configuration des Secrets (Optionnel)
+- `MathsTrainer-APK` — installation directe sur un téléphone
+- `MathsTrainer-AAB` — dépôt sur le Google Play Store
 
-Pour un déploiement plus sécurisé, vous pouvez stocker le keystore en tant que secret:
+Onglet **Actions** → dernier workflow → section **Artifacts**.
 
-1. Générer un keystore sécurisé
-2. Encoder en base64
-3. Ajouter en secret GitHub
-4. Mettre à jour le workflow pour l'utiliser
+## 2. Keystore de signature
 
-Voir `.github/workflows/build.yml` pour les détails.
+Sans configuration, le workflow génère un keystore **éphémère** à chaque build.
+C'est suffisant pour tester un APK, mais :
+
+- deux builds successifs ne peuvent pas se mettre à jour l'un l'autre ;
+- le Play Store refusera un AAB signé par une clé différente de la précédente.
+
+### Créer un keystore permanent
+
+```bash
+keytool -genkeypair -v \
+  -keystore mathtrainer-release.keystore \
+  -alias mathtrainer \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -dname "CN=Stan Desvoye, O=Personal, C=FR"
+```
+
+Conservez ce fichier et son mot de passe hors du dépôt : **il est irremplaçable**.
+Le perdre signifie ne plus jamais pouvoir mettre à jour l'application publiée.
+
+### Le déclarer dans GitHub
+
+```bash
+base64 -w0 mathtrainer-release.keystore > keystore.b64
+```
+
+Puis dans **Settings → Secrets and variables → Actions → New repository secret** :
+
+| Secret | Valeur |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | contenu de `keystore.b64` |
+| `ANDROID_KEYSTORE_PASSWORD` | mot de passe du keystore |
+| `ANDROID_KEY_ALIAS` | `mathtrainer` |
+| `ANDROID_KEY_PASSWORD` | mot de passe de la clé |
+
+Le workflow les détecte automatiquement au build suivant.
+
+## 3. Publier une version
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Une Release GitHub est créée avec l'APK et l'AAB attachés.
+
+## 4. Installer l'APK sur Android
+
+1. Transférer le `.apk` sur le téléphone
+2. Autoriser « Installer des applications inconnues » pour le gestionnaire de fichiers
+3. Ouvrir le fichier et confirmer
+
+## 5. Publier sur le Play Store
+
+1. Google Play Console → créer l'application
+2. Téléverser `MathsTrainer.aab` en test interne
+3. Renseigner la fiche Play, la politique de confidentialité et le questionnaire
+   « Sécurité des données » — obligatoire dès qu'une régie publicitaire est intégrée
+4. L'application cible les enfants : vérifier la section **Familles** et régler
+   le traitement des annonces en conséquence dans AdMob
 
 ## Dépannage
 
-### Le build échoue?
-- Vérifier les logs dans **Actions** → **Workflow** → Output
-- Vérifier que Node.js, Java, et Android SDK sont disponibles
-- Vérifier le format du keystore
+**Le build échoue** — Actions → workflow → dérouler l'étape en rouge.
+Les causes fréquentes sont une version de plugin incompatible ou un secret mal encodé
+(`base64 -w0` est requis, sans retour à la ligne).
 
-### L'app ne s'installe pas?
-- Vérifier les permissions AndroidManifest.xml
-- Vérifier la version minimale d'Android (API 31+)
+**La bannière ne s'affiche pas** — une nouvelle unité AdMob met généralement
+quelques heures avant de diffuser. Vérifier les logs via `adb logcat | grep Ads`.
 
-## Support
+## Références
 
-Pour plus d'aide:
-- Cordova: https://cordova.apache.org/docs/en/latest/
-- AdMob: https://admob.google.com/
-- GitHub Actions: https://docs.github.com/en/actions
+- Cordova Android : https://cordova.apache.org/docs/en/latest/guide/platforms/android/
+- AdMob Plus : https://admob-plus.github.io/
+- Politique AdMob : https://support.google.com/admob/answer/6128543
