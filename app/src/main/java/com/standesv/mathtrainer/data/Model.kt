@@ -7,10 +7,14 @@ enum class GameMode(val label: String, val hint: String) {
     MIX("Mix", "Additions et soustractions melangees"),
     ADD("+", "Additions uniquement"),
     SUB("−", "Soustractions uniquement"),
-    TABLES("Tables", "Une table precise, en + ou en −")
+    TABLES("Tables", "Une table precise : ×, + ou −")
 }
 
-enum class TablesOp { ADD, SUB }
+enum class TablesOp(val label: String, val symbol: String) {
+    ADD("Addition", "+"),
+    SUB("Soustraction", "−"),
+    MUL("Multiplication", "×")
+}
 
 /** Reglages persistes par profil. */
 data class Settings(
@@ -30,6 +34,13 @@ data class Settings(
         const val MAX_LEVEL = 200
         const val MIN_TABLE = 1
         const val MAX_TABLE = 20
+
+        /**
+         * Une table de multiplication se recite classiquement jusqu'a 10.
+         * Sans ce plafond, le niveau (jusqu'a 200) donnerait des questions
+         * du type 7 x 173, qui n'ont plus rien d'un exercice de table.
+         */
+        const val MUL_MAX_FACTOR = 10
     }
 }
 
@@ -108,12 +119,24 @@ object QuestionGenerator {
 
     private fun tables(settings: Settings, max: Int): Question {
         val t = settings.tableNumber.coerceIn(Settings.MIN_TABLE, Settings.MAX_TABLE)
-        val n = Random.nextInt(0, max + 1)
-        return if (settings.tablesOp == TablesOp.ADD) {
-            Question(a = t, b = n, op = "+", answer = t + n)
-        } else {
-            val a = t + n
-            Question(a = a, b = t, op = "−", answer = a - t)
+
+        return when (settings.tablesOp) {
+            TablesOp.MUL -> {
+                val n = Random.nextInt(0, minOf(max, Settings.MUL_MAX_FACTOR) + 1)
+                Question(a = t, b = n, op = "×", answer = t * n)
+            }
+
+            TablesOp.ADD -> {
+                val n = Random.nextInt(0, max + 1)
+                Question(a = t, b = n, op = "+", answer = t + n)
+            }
+
+            // On part du resultat pour garantir un reste positif : (t + n) − t.
+            TablesOp.SUB -> {
+                val n = Random.nextInt(0, max + 1)
+                val a = t + n
+                Question(a = a, b = t, op = "−", answer = a - t)
+            }
         }
     }
 }

@@ -112,7 +112,9 @@ class Store(private val context: Context) {
         maxValue = prefs[Keys.maxValue(profile)] ?: 20,
         allowNegative = prefs[Keys.allowNegative(profile)] ?: false,
         tableNumber = prefs[Keys.tableNumber(profile)] ?: 7,
-        tablesOp = if (prefs[Keys.tablesOp(profile)] == "SUB") TablesOp.SUB else TablesOp.ADD,
+        tablesOp = runCatching {
+            TablesOp.valueOf(prefs[Keys.tablesOp(profile)] ?: TablesOp.ADD.name)
+        }.getOrDefault(TablesOp.ADD),
         progressEnabled = prefs[Keys.progressEnabled(profile)] ?: true,
         soundEnabled = prefs[Keys.soundEnabled(profile)] ?: true,
         confettiEnabled = prefs[Keys.confettiEnabled(profile)] ?: true

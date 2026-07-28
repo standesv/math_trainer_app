@@ -242,7 +242,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val timeSec = (s.elapsedMs / 1000).toInt()
         val avg = if (s.total > 0) s.elapsedMs / 1000.0 / s.total else 0.0
         val modeLabel = if (s.mode == GameMode.TABLES)
-            "Table de ${s.settings.tableNumber}" else s.mode.label
+            "Table de ${s.settings.tableNumber} (${s.settings.tablesOp.symbol})"
+        else s.mode.label
 
         viewModelScope.launch {
             store.addHistory(

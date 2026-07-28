@@ -80,20 +80,37 @@ fun SettingsSheet(
                 max = Settings.MAX_TABLE
             ) { v -> onChange { it.copy(tableNumber = v) } }
 
+            // Trois operations : le libelle complet ne tient pas sur un tiers
+            // de largeur, on affiche donc le symbole en grand avec le nom dessous.
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                listOf(TablesOp.ADD to "Addition", TablesOp.SUB to "Soustraction").forEach { (op, lbl) ->
+                TablesOp.entries.forEach { op ->
                     val sel = settings.tablesOp == op
                     Button(
                         onClick = { onChange { it.copy(tablesOp = op) } },
-                        modifier = Modifier.weight(1f).height(54.dp),
+                        modifier = Modifier.weight(1f).height(72.dp),
                         shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues(4.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (sel) BlueMain
                             else MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = if (sel) Color.White else TextDark
                         )
-                    ) { Text(lbl, style = MaterialTheme.typography.titleMedium) }
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(op.symbol, style = MaterialTheme.typography.headlineMedium)
+                            Text(op.label, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
                 }
+            }
+
+            if (settings.tablesOp == TablesOp.MUL) {
+                Text(
+                    "La table de ${settings.tableNumber} sera demandee de 0 a " +
+                        "${minOf(settings.maxValue, Settings.MUL_MAX_FACTOR)}.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
             }
 
             HorizontalDivider()
