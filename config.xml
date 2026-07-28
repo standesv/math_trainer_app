@@ -26,14 +26,19 @@
     <preference name="Orientation" value="portrait" />
     <preference name="android-minSdkVersion" value="24" />
 
+    <!-- Requis par admob-plus 2.x, dont les sources Android sont en Kotlin.
+         cordova-android 15 desactive le plugin Gradle Kotlin par defaut. -->
+    <preference name="GradlePluginKotlinEnabled" value="true" />
+
     <engine name="android" spec="^15.1.0" />
 
-    <!-- NE PAS surcharger PLAY_SERVICES_VERSION.
-         La valeur par défaut du plugin (20.6.0) est la seule dont la
-         compilation est vérifiée : admob-plus 1.x appelle
-         MobileAds.getVersionString(), supprimé du SDK dès la 22.0.0.
-         Essais faits : 23.6.0 -> echec, 22.6.0 -> echec (meme symbole). -->
-    <plugin name="admob-plus-cordova" spec="^1.28.0">
+    <!-- admob-plus 2.x (et non 1.x) : la branche 1.x est figee sur le SDK Ads
+         20.6.0 de janvier 2022, anterieur a Android 14, et c'est elle qui
+         faisait planter l'application au demarrage. Elle ne peut pas etre
+         mise a jour : elle appelle MobileAds.getVersionString(), supprime du
+         SDK des la 22.0.0. La 2.x cible 23.2.0 par defaut et n'utilise plus
+         ce symbole. NE PAS surcharger PLAY_SERVICES_VERSION. -->
+    <plugin name="admob-plus-cordova" spec="2.0.0-alpha.19">
         <variable name="APP_ID_ANDROID" value="ca-app-pub-3209259150498249~7379927993" />
         <variable name="APP_ID_IOS" value="ca-app-pub-3209259150498249~7379927993" />
     </plugin>
