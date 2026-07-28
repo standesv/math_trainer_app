@@ -7,7 +7,8 @@ enum class GameMode(val label: String, val hint: String) {
     MIX("Mix", "Additions et soustractions melangees"),
     ADD("+", "Additions uniquement"),
     SUB("−", "Soustractions uniquement"),
-    TABLES("Tables", "Une table precise : ×, + ou −")
+    MUL("×", "Toutes les tables de multiplication melangees"),
+    TABLES("Tables", "Une seule table, a choisir juste en dessous")
 }
 
 enum class TablesOp(val label: String, val symbol: String) {
@@ -104,6 +105,15 @@ object QuestionGenerator {
     }
 
     private fun standard(mode: GameMode, settings: Settings, max: Int): Question {
+        // Mode multiplication : les deux facteurs restent dans la plage des
+        // tables, sinon on obtiendrait 173 x 88 des que le niveau monte.
+        if (mode == GameMode.MUL) {
+            val cap = minOf(max, Settings.MUL_MAX_FACTOR)
+            val a = Random.nextInt(1, cap + 1)
+            val b = Random.nextInt(0, cap + 1)
+            return Question(a = a, b = b, op = "×", answer = a * b)
+        }
+
         val op = pickOp(mode)
         var a = Random.nextInt(0, max + 1)
         var b = Random.nextInt(0, max + 1)

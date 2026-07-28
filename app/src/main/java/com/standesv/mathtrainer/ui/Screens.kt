@@ -27,7 +27,9 @@ fun HomeScreen(
     onMode: (GameMode) -> Unit,
     onStart: () -> Unit,
     onSelectProfile: (String) -> Unit,
-    onAddProfile: () -> Unit
+    onAddProfile: () -> Unit,
+    onTablesOp: (TablesOp) -> Unit,
+    onTableNumber: (Int) -> Unit
 ) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -89,6 +91,83 @@ fun HomeScreen(
 
             Spacer(Modifier.height(10.dp))
             Text(ui.mode.hint, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+
+            // Le choix de la table est propose ici, et non dans les reglages :
+            // une option qu'un enfant ne voit pas sur l'accueil n'existe pas.
+            if (ui.mode == GameMode.TABLES) {
+                Spacer(Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(16.dp))
+
+                Text("Quelle operation ?", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    TablesOp.entries.forEach { op ->
+                        val sel = ui.settings.tablesOp == op
+                        Button(
+                            onClick = { onTablesOp(op) },
+                            modifier = Modifier.weight(1f).height(58.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (sel) Purple
+                                else MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = if (sel) Color.White else TextDark
+                            )
+                        ) {
+                            Text(op.symbol, style = MaterialTheme.typography.headlineMedium)
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+                Text("Quelle table ?", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = { onTableNumber(ui.settings.tableNumber - 1) },
+                        enabled = ui.settings.tableNumber > Settings.MIN_TABLE,
+                        modifier = Modifier.size(58.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) { Text("−", style = MaterialTheme.typography.headlineMedium) }
+
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        Text(
+                            "${ui.settings.tableNumber}",
+                            style = MaterialTheme.typography.displayLarge,
+                            color = Purple
+                        )
+                    }
+
+                    Button(
+                        onClick = { onTableNumber(ui.settings.tableNumber + 1) },
+                        enabled = ui.settings.tableNumber < Settings.MAX_TABLE,
+                        modifier = Modifier.size(58.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) { Text("+", style = MaterialTheme.typography.headlineMedium) }
+                }
+
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    when (ui.settings.tablesOp) {
+                        TablesOp.MUL -> "Table de ${ui.settings.tableNumber} : de " +
+                            "${ui.settings.tableNumber} × 0 a ${ui.settings.tableNumber} × " +
+                            "${minOf(ui.effectiveMax, Settings.MUL_MAX_FACTOR)}"
+                        TablesOp.ADD -> "Additions avec ${ui.settings.tableNumber}"
+                        TablesOp.SUB -> "Soustractions avec ${ui.settings.tableNumber}"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+            }
         }
 
         SoftCard {

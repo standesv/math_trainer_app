@@ -86,7 +86,18 @@ fun AppRoot(vm: GameViewModel = viewModel()) {
                     onMode = { vm.setMode(it) },
                     onStart = { vm.startGame() },
                     onSelectProfile = { vm.selectProfile(it) },
-                    onAddProfile = { profileDialog = ProfileDialog.Add }
+                    onAddProfile = { profileDialog = ProfileDialog.Add },
+                    onTablesOp = { op -> vm.updateSettings { it.copy(tablesOp = op) } },
+                    onTableNumber = { n ->
+                        vm.updateSettings {
+                            it.copy(
+                                tableNumber = n.coerceIn(
+                                    com.standesv.mathtrainer.data.Settings.MIN_TABLE,
+                                    com.standesv.mathtrainer.data.Settings.MAX_TABLE
+                                )
+                            )
+                        }
+                    }
                 )
 
                 Screen.GAME -> GameScreen(
