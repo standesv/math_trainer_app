@@ -106,6 +106,26 @@ jobs:
           cp "$AAB" dist/MathsTrainer.aab
           ls -lh dist
 
+      # Variante de diagnostic : identique, mais sans le plugin AdMob.
+      # Si l'APK principal plante au lancement et que celui-ci fonctionne,
+      # la cause est le SDK publicitaire - sans avoir besoin d'adb.
+      - name: Build fallback APK without ads
+        run: |
+          set -euo pipefail
+          npx cordova plugin rm admob-plus-cordova --no-telemetry
+          npx cordova build android --release --no-telemetry -- --packageType=apk
+          APK=$(find platforms/android -name '*.apk' -path '*release*' ! -name '*unsigned*' | head -1)
+          [ -n "$APK" ] || { echo "::error::APK sans pub introuvable"; exit 1; }
+          cp "$APK" dist/MathsTrainer-sans-pub.apk
+          ls -lh dist
+
+      - name: Upload fallback APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: MathsTrainer-APK-sans-pub
+          path: dist/MathsTrainer-sans-pub.apk
+          if-no-files-found: error
+
       - name: Upload APK
         uses: actions/upload-artifact@v7
         with:
@@ -127,4 +147,5 @@ jobs:
           files: |
             dist/MathsTrainer.apk
             dist/MathsTrainer.aab
+            dist/MathsTrainer-sans-pub.apk
           generate_release_notes: true

@@ -25,16 +25,20 @@
 
     <preference name="Orientation" value="portrait" />
     <preference name="android-minSdkVersion" value="24" />
-    <preference name="AndroidInsetsMode" value="native" />
 
     <engine name="android" spec="^15.1.0" />
 
-    <!-- PLAY_SERVICES_VERSION n'est volontairement pas surchargé : le plugin
-         utilise sa valeur par défaut (20.6.0), la seule contre laquelle son
-         code Java compile. Le SDK Ads 23.0.0 a supprimé MobileAds.getVersionString()
-         et AdSize.SMART_BANNER, tous deux utilisés par admob-plus 1.x. -->
+    <!-- PLAY_SERVICES_VERSION = 22.6.0, choisi après audit du code du plugin :
+         c'est la dernière version du SDK Google Mobile Ads qui contient encore
+         MobileAds.getVersionString(), AdSize.SMART_BANNER et la surcharge
+         AppOpenAd.load(..., orientation, ...) utilisés par admob-plus 1.x.
+         Tous trois ont été supprimés en 23.0.0 -> le build ne compile plus.
+         La valeur par défaut du plugin (20.6.0, janvier 2022) compile mais est
+         antérieure à Android 14, dont les règles sur les receivers peuvent
+         faire planter l'application au démarrage. -->
     <plugin name="admob-plus-cordova" spec="^1.28.0">
         <variable name="APP_ID_ANDROID" value="ca-app-pub-3209259150498249~7379927993" />
         <variable name="APP_ID_IOS" value="ca-app-pub-3209259150498249~7379927993" />
+        <variable name="PLAY_SERVICES_VERSION" value="22.6.0" />
     </plugin>
 </widget>
