@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- app_name est genere par build.gradle.kts (resValue) afin d'y inclure
+         le numero de version. Ne pas le declarer ici : doublon de ressource. -->
+    <string name="admob_banner_unit_id" translatable="false">ca-app-pub-3209259150498249/5742724335</string>
+    <string name="admob_banner_test_unit_id" translatable="false">ca-app-pub-3940256099942544/6300978111</string>
+</resources>

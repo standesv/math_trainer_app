@@ -1,39 +1,46 @@
-# Cordova
-/platforms/
-/plugins/
-node_modules/
+# Gradle / Android
+.gradle/
+build/
+app/build/
+local.properties
+captures/
+.cxx/
 
-# Build outputs
-*.apk
-*.aab
+# Signature - ne jamais committer
 *.jks
 *.keystore
 *.p12
+keystore.b64
+
+# Sorties
+*.apk
+*.aab
+dist/
+
+# Restes de l'ancienne version Cordova / PWA
+node_modules/
+platforms/
+plugins/
+www/
+build.json
+package-lock.json
+sw.js
+app.js
+app.v*.js
+styles.v*.css
+styles.css
+style.css
+index.html
+manifest.webmanifest
+icon-192.png
+icon-512.png
 
 # IDE
-.vscode/
 .idea/
+*.iml
+.vscode/
 *.swp
-*.swo
-*~
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Gradle
-.gradle/
-build/
-*.gradle
-
-# Android Studio
-*.iml
-local.properties
-
-# Environment variables
-.env
-.env.local
-
-# Testing
-coverage/
-.nyc_output/

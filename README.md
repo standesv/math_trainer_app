@@ -1,89 +1,77 @@
-# Maths Trainer - Application Mobile
+# Maths Trainer
 
-Application d'entraînement aux additions et soustractions pour enfants, disponible sur Android et web.
+Application Android d'entrainement aux additions et soustractions, concue pour des enfants.
 
-## Fonctionnalités
+## Fonctionnalites
 
-- 📱 Application mobile Android (APK/AAB)
-- ➕ Additions et soustractions
-- 🎯 Mode tables de multiplication
-- 📊 Suivi des scores et progression
-- 👥 Profils utilisateur multiples
-- 🎨 Interface simple et colorée
-- 🔊 Effets sonores
-- ✨ Confettis sur les bonnes réponses
+- Profils multiples, chacun avec ses reglages, sa progression et son historique
+- Quatre modes : Mix, Addition, Soustraction, Tables
+- Progression par paliers de 10 jusqu'a 200, debloques a 80 % de reussite sur au moins 10 questions
+- Chronometre et moyenne de secondes par question
+- Corrige detaille en fin de partie
+- Historique des 12 dernieres parties par profil
+- Sons de retour et confettis
+- Banniere publicitaire AdMob en bas d'ecran
 
-## Installation
+## Ergonomie pensee pour les enfants
 
-### Via APK (Android)
-1. Télécharger le fichier APK depuis les [Releases](https://github.com/standesv/math_trainer/releases)
-2. Installer sur votre appareil Android
-3. Ouvrir l'application
+Le clavier systeme est remplace par un **pave numerique integre** : cibles tactiles
+larges, uniquement des chiffres, aucun risque de sortir de l'application. Les
+boutons font au moins 56 dp de haut, la police est large et la palette tres
+contrastee. Les reglages n'utilisent que des boutons + / − et des interrupteurs,
+sans aucune saisie libre de nombre.
 
-### Via AAB (Google Play)
-Fichier de déploiement Google Play disponible dans les releases.
+## Technique
 
-## Structure du Projet
+Application **native Kotlin + Jetpack Compose**, Material 3.
+
+Elle remplace une version Cordova qui plantait au demarrage. L'empilement
+WebView + plugin AdMob tiers + substitution de variables dans le manifeste
+etait la source du probleme : le SDK publicitaire recevait un identifiant
+invalide et interrompait le lancement. En natif, l'App ID est ecrit en dur
+dans `AndroidManifest.xml` et le SDK AdMob officiel est une simple dependance
+Gradle.
+
+| Element | Choix |
+|---|---|
+| Langage | Kotlin 2.0.21 |
+| Interface | Jetpack Compose, Material 3 |
+| Persistance | DataStore Preferences |
+| Publicite | `play-services-ads` 23.5.0 (SDK officiel) |
+| minSdk / targetSdk | 24 / 35 |
+
+## Structure
 
 ```
-math_trainer_app/
-├── www/                    # Fichiers web (HTML/CSS/JS)
-├── platforms/              # Plateformes de build (Android, iOS)
-├── plugins/                # Plugins Cordova
-├── config.xml              # Configuration Cordova
-├── package.json            # Dépendances Node
-└── .github/workflows/      # GitHub Actions pour le build
+app/src/main/java/com/standesv/mathtrainer/
+├── MainActivity.kt        navigation, assemblage des ecrans
+├── GameViewModel.kt       etat de la partie, chronometre, progression
+├── data/
+│   ├── Model.kt           modes, reglages, generation des questions
+│   └── Store.kt           persistance par profil
+└── ui/
+    ├── Theme.kt           palette et typographie
+    ├── Components.kt      pave numerique, boutons, cartes
+    ├── Screens.kt         accueil, jeu, resultat, scores
+    ├── SettingsSheet.kt   reglages
+    ├── Effects.kt         sons et confettis
+    └── AdBanner.kt        banniere AdMob
 ```
 
-## Développement
+## Compilation
 
-### Prérequis
-- Node.js 18+
-- Cordova 12+
-- Android SDK (pour le build local)
-- Java 11+
-
-### Setup
 ```bash
-npm install
-cordova platform add android
+gradle assembleRelease bundleRelease
 ```
 
-### Build Local
-```bash
-# Build APK
-npm run build:apk
+Prerequis : Java 17, Android SDK 35, Gradle 8.9.
 
-# Build AAB
-npm run build:aab
-```
+Le nom affiche sous l'icone inclut la version, injectee depuis le tag git
+par la CI (`Maths Trainer 1.1.0`).
 
-Prérequis local : Node 22, Java 21, Android SDK 36.
+## Publication
 
-## Déploiement Automatique
-
-GitHub Actions compile l'APK et l'AAB à chaque push sur `main`.
-Un push de tag `v*` publie en plus une Release avec les deux fichiers.
-
-Voir `.github/workflows/build.yml` et `DEPLOYMENT.md`.
-
-## Configuration AdMob
-
-Plugin utilisé : [`admob-plus-cordova`](https://github.com/admob-plus/admob-plus) (activement maintenu).
-
-| Élément | Valeur | Emplacement |
-|---|---|---|
-| App ID | `ca-app-pub-3209259150498249~7379927993` | `config.xml` (variable `APP_ID_ANDROID`) |
-| Banner ID | `ca-app-pub-3209259150498249/5742724335` | `www/js/admob.js` |
-
-La bannière s'affiche en bas de l'écran, au-dessus de la barre de navigation.
-En développement (`http://localhost`), l'ID de test officiel Google est utilisé
-automatiquement afin de ne pas fausser les statistiques ni risquer une
-suspension du compte AdMob.
-
-## License
-
-MIT
+Voir `DEPLOYMENT.md`.
 
 ## Auteur
 

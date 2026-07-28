@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Theme minimal : l'apparence est entierement geree par Material 3
+         cote Compose. Ce theme ne sert qu'au demarrage de l'activite. -->
+    <style name="Theme.MathsTrainer" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#4C6FFF</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+    </style>
+</resources>

@@ -19,156 +19,107 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-
-      - name: Setup Java 21
+      - name: Setup Java 17
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Install dependencies
-        run: npm install
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Compute version
+        run: |
+          set -euo pipefail
+          case "${GITHUB_REF:-}" in
+            refs/tags/v*) NAME="${GITHUB_REF_NAME#v}" ;;
+            *)            NAME="0.0.${GITHUB_RUN_NUMBER}" ;;
+          esac
+          echo "APP_VERSION_NAME=$NAME"          >> "$GITHUB_ENV"
+          echo "APP_VERSION_CODE=$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+          echo "Version : $NAME (code $GITHUB_RUN_NUMBER)"
 
       - name: Prepare keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          KEYSTORE_PATH="$RUNNER_TEMP/release.keystore"
+          KS="$RUNNER_TEMP/release.keystore"
 
           if [ -n "${KEYSTORE_BASE64:-}" ]; then
-            echo "Keystore fourni via les secrets du dépôt."
-            echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
-            STORE_PASS="$STORE_PASSWORD"
-            ALIAS="$KEY_ALIAS"
-            KEY_PASS="$KEY_PASSWORD"
+            echo "Keystore fourni par les secrets du depot."
+            echo "$KEYSTORE_BASE64" | base64 -d > "$KS"
+            echo "KEYSTORE_PATH=$KS"           >> "$GITHUB_ENV"
+            echo "KEYSTORE_PASSWORD=$STORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=$ALIAS"            >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$KEY_PASSWORD"  >> "$GITHUB_ENV"
           else
-            echo "::warning::Aucun keystore dans les secrets - génération d'un keystore éphémère."
-            echo "::warning::Cet APK ne peut PAS servir à mettre à jour une installation existante ni à publier sur le Play Store."
-            STORE_PASS="mathtrainer"
-            ALIAS="mathtrainer"
-            KEY_PASS="mathtrainer"
-            keytool -genkeypair -v \
-              -keystore "$KEYSTORE_PATH" \
-              -alias "$ALIAS" \
+            echo "::warning::Aucun keystore dans les secrets - cle ephemere generee."
+            echo "::warning::Cet APK ne pourra pas mettre a jour une installation existante."
+            keytool -genkeypair -v -keystore "$KS" -alias mathtrainer \
               -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass "$STORE_PASS" -keypass "$KEY_PASS" \
+              -storepass mathtrainer -keypass mathtrainer \
               -dname "CN=Stan Desvoye, O=Personal, C=FR"
+            echo "KEYSTORE_PATH=$KS"        >> "$GITHUB_ENV"
+            echo "KEYSTORE_PASSWORD=mathtrainer" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=mathtrainer"    >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=mathtrainer" >> "$GITHUB_ENV"
           fi
 
-          cat > build.json <<EOF
-          {
-            "android": {
-              "release": {
-                "keystore": "$KEYSTORE_PATH",
-                "storePassword": "$STORE_PASS",
-                "alias": "$ALIAS",
-                "password": "$KEY_PASS",
-                "keystoreType": "jks"
-              }
-            }
-          }
-          EOF
+      - name: Build APK and AAB
+        run: |
+          gradle --no-daemon --stacktrace \
+            -PappVersionName="$APP_VERSION_NAME" \
+            -PappVersionCode="$APP_VERSION_CODE" \
+            assembleRelease bundleRelease
 
-      - name: Set version and app name
+      - name: Verify AdMob App ID in merged manifest
         run: |
           set -euo pipefail
-          case "${GITHUB_REF:-}" in
-            refs/tags/v*) VERSION="${GITHUB_REF_NAME#v}" ;;
-            *)            VERSION="0.0.${GITHUB_RUN_NUMBER}" ;;
-          esac
-
-          python3 - "$VERSION" <<'PY'
-          import re, sys
-          v = sys.argv[1]
-          x = open('config.xml', encoding='utf-8').read()
-          x = re.sub(r'(<widget[^>]*?\sversion=")[^"]*(")', rf'\g<1>{v}\g<2>', x, count=1)
-          x = re.sub(r'<name>.*?</name>', f'<name>Maths Trainer {v}</name>', x, count=1)
-          open('config.xml', 'w', encoding='utf-8').write(x)
-          print(f'Nom de l app : "Maths Trainer {v}"')
-          PY
-
-      - name: Add Android platform
-        run: npx cordova platform add android --no-telemetry
-
-      # Reinstallation explicite avec les variables. Si elles ne sont pas
-      # transmises, le plugin injecte son App ID d'exemple (ca-app-pub-xxx~yyy)
-      # et le SDK Google Mobile Ads leve une exception au demarrage, avant meme
-      # que le JavaScript ne s'execute : l'application se ferme instantanement.
-      - name: Reinstall AdMob plugin with explicit variables
-        run: |
-          set -euo pipefail
-          npx cordova plugin rm admob-plus-cordova --no-telemetry || true
-          npx cordova plugin add admob-plus-cordova@2.0.0-alpha.19 --no-telemetry \
-            --variable APP_ID_ANDROID=ca-app-pub-3209259150498249~7379927993 \
-            --variable APP_ID_IOS=ca-app-pub-3209259150498249~7379927993
-          npx cordova prepare android --no-telemetry
-
-      - name: Verify AdMob App ID in AndroidManifest
-        run: |
-          set -euo pipefail
-          MANIFEST=platforms/android/app/src/main/AndroidManifest.xml
-
-          echo "--- meta-data AdMob present dans le manifeste ---"
+          MANIFEST=$(find app/build/intermediates -name AndroidManifest.xml -path '*release*' | head -1)
+          echo "Manifeste : $MANIFEST"
           grep -n -A1 "APPLICATION_ID" "$MANIFEST" || true
 
-          if grep -q 'ca-app-pub-xxx~yyy' "$MANIFEST"; then
-            echo "::error::App ID d'exemple non substitue - l'application planterait au demarrage."
-            exit 1
-          fi
-
           if ! grep -q 'ca-app-pub-3209259150498249~7379927993' "$MANIFEST"; then
-            echo "::error::App ID AdMob absent du manifeste."
+            echo "::error::App ID AdMob absent du manifeste fusionne."
             exit 1
           fi
-
-          echo "OK : App ID AdMob correctement injecte."
-
-      - name: Build APK (release, signed)
-        run: npx cordova build android --release --no-telemetry -- --packageType=apk
-
-      - name: Build AAB (release, signed)
-        run: npx cordova build android --release --no-telemetry -- --packageType=bundle
+          echo "OK : App ID AdMob present."
 
       - name: Collect artifacts
         run: |
           set -euo pipefail
           mkdir -p dist
+          APK=$(find app/build/outputs/apk/release -name '*.apk' ! -name '*unsigned*' | head -1)
+          AAB=$(find app/build/outputs/bundle/release -name '*.aab' | head -1)
 
-          # Exclut explicitement les APK non signés produits comme intermédiaires,
-          # sinon ils peuvent écraser l'APK signé et donner un fichier ininstallable.
-          APK=$(find platforms/android -name '*.apk' -path '*release*' ! -name '*unsigned*' | head -1)
-          AAB=$(find platforms/android -name '*.aab' -path '*release*' | head -1)
+          [ -n "$APK" ] || { echo "::error::APK introuvable"; exit 1; }
+          [ -n "$AAB" ] || { echo "::error::AAB introuvable"; exit 1; }
 
-          [ -n "$APK" ] || { echo "::error::Aucun APK signé trouvé"; exit 1; }
-          [ -n "$AAB" ] || { echo "::error::Aucun AAB trouvé"; exit 1; }
-
-          cp "$APK" dist/MathsTrainer.apk
-          cp "$AAB" dist/MathsTrainer.aab
+          cp "$APK" "dist/MathsTrainer-${APP_VERSION_NAME}.apk"
+          cp "$AAB" "dist/MathsTrainer-${APP_VERSION_NAME}.aab"
           ls -lh dist
 
       - name: Upload APK
         uses: actions/upload-artifact@v7
         with:
-          name: MathsTrainer-APK
-          path: dist/MathsTrainer.apk
+          name: MathsTrainer-${{ env.APP_VERSION_NAME }}-APK
+          path: dist/*.apk
           if-no-files-found: error
 
       - name: Upload AAB
         uses: actions/upload-artifact@v7
         with:
-          name: MathsTrainer-AAB
-          path: dist/MathsTrainer.aab
+          name: MathsTrainer-${{ env.APP_VERSION_NAME }}-AAB
+          path: dist/*.aab
           if-no-files-found: error
 
       - name: Publish GitHub Release
@@ -176,6 +127,6 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            dist/MathsTrainer.apk
-            dist/MathsTrainer.aab
+            dist/*.apk
+            dist/*.aab
           generate_release_notes: true
