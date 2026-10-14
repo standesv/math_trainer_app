@@ -11,33 +11,59 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.android.gms.ads.MobileAds
+import com.standesv.mathtrainer.ads.ConsentManager
 import com.standesv.mathtrainer.ui.*
 
 class MainActivity : ComponentActivity() {
 
+    private lateinit var consent: ConsentManager
+
+    /** Pilote l'affichage de la banniere : faux tant que le consentement manque. */
+    private val adsAllowed = mutableStateOf(false)
+
+    /** Vrai quand Google impose un acces permanent aux options de confidentialite. */
+    private val privacyOptionsRequired = mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialisation du SDK publicitaire hors du thread principal.
-        // Une eventuelle erreur reseau ne doit jamais empecher l'app de demarrer.
-        Thread {
-            runCatching { MobileAds.initialize(this) }
-        }.start()
+        consent = ConsentManager(this)
+        // Le recueil est asynchrone et ne bloque jamais l'affichage : si le
+        // reseau est absent, l'application s'ouvre simplement sans banniere.
+        consent.gather {
+            adsAllowed.value = consent.canRequestAds
+            privacyOptionsRequired.value = consent.isPrivacyOptionsRequired
+        }
 
         setContent {
             MathsTrainerTheme {
                 Surface(
                     Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
-                ) { AppRoot() }
+                ) {
+                    AppRoot(
+                        adsAllowed = adsAllowed.value,
+                        privacyOptionsRequired = privacyOptionsRequired.value,
+                        onShowPrivacyOptions = {
+                            consent.showPrivacyOptions {
+                                adsAllowed.value = consent.canRequestAds
+                                privacyOptionsRequired.value = consent.isPrivacyOptionsRequired
+                            }
+                        }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun AppRoot(vm: GameViewModel = viewModel()) {
+fun AppRoot(
+    adsAllowed: Boolean,
+    privacyOptionsRequired: Boolean,
+    onShowPrivacyOptions: () -> Unit,
+    vm: GameViewModel = viewModel()
+) {
     val ui by vm.ui.collectAsState()
 
     val sound = remember { SoundPlayer() }
@@ -75,7 +101,7 @@ fun AppRoot(vm: GameViewModel = viewModel()) {
                         NavItem("Scores", ui.screen == Screen.SCORES) { vm.go(Screen.SCORES) }
                     }
                 }
-                AdBanner(Modifier.navigationBarsPadding())
+                AdBanner(enabled = adsAllowed, modifier = Modifier.navigationBarsPadding())
             }
         }
     ) { padding ->
@@ -97,7 +123,8 @@ fun AppRoot(vm: GameViewModel = viewModel()) {
                                 )
                             )
                         }
-                    }
+                    },
+                    onOpenSettings = { showSettings = true }
                 )
 
                 Screen.GAME -> GameScreen(
@@ -133,6 +160,8 @@ fun AppRoot(vm: GameViewModel = viewModel()) {
         SettingsSheet(
             settings = ui.settings,
             progress = ui.progress,
+            privacyOptionsRequired = privacyOptionsRequired,
+            onShowPrivacyOptions = onShowPrivacyOptions,
             onChange = { vm.updateSettings(it) },
             onResetProgress = { vm.resetProgress() },
             onRenameProfile = { profileDialog = ProfileDialog.Rename },

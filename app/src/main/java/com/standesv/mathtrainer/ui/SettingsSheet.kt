@@ -12,7 +12,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.standesv.mathtrainer.data.Progress
 import com.standesv.mathtrainer.data.Settings
-import com.standesv.mathtrainer.data.TablesOp
 
 /**
  * Reglages. Aucune saisie clavier : uniquement des boutons + / − et des
@@ -24,6 +23,8 @@ import com.standesv.mathtrainer.data.TablesOp
 fun SettingsSheet(
     settings: Settings,
     progress: Progress,
+    privacyOptionsRequired: Boolean,
+    onShowPrivacyOptions: () -> Unit,
     onChange: ((Settings) -> Settings) -> Unit,
     onResetProgress: () -> Unit,
     onRenameProfile: () -> Unit,
@@ -57,11 +58,14 @@ fun SettingsSheet(
                 max = Settings.MAX_LEVEL
             ) { v -> onChange { it.copy(maxValue = v) } }
 
-            if (settings.progressEnabled) {
+            // Sans cette phrase, le panneau affiche 50 alors que l'accueil
+            // annonce 10, et rien n'explique l'ecart.
+            if (settings.progressEnabled && settings.maxValue > progress.unlockedMax) {
                 Text(
-                    "La progression plafonne le niveau a ${progress.unlockedMax} pour l'instant.",
+                    "Niveau applique : ${progress.unlockedMax}. La progression le " +
+                        "plafonne tant que le palier suivant n'est pas debloque.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
+                    color = Amber
                 )
             }
 
@@ -69,49 +73,9 @@ fun SettingsSheet(
                 onChange { it.copy(allowNegative = v) }
             }
 
-            HorizontalDivider()
-            Text("Mode Tables", style = MaterialTheme.typography.titleLarge)
-
-            Stepper(
-                label = "Table",
-                value = settings.tableNumber,
-                step = 1,
-                min = Settings.MIN_TABLE,
-                max = Settings.MAX_TABLE
-            ) { v -> onChange { it.copy(tableNumber = v) } }
-
-            // Trois operations : le libelle complet ne tient pas sur un tiers
-            // de largeur, on affiche donc le symbole en grand avec le nom dessous.
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                TablesOp.entries.forEach { op ->
-                    val sel = settings.tablesOp == op
-                    Button(
-                        onClick = { onChange { it.copy(tablesOp = op) } },
-                        modifier = Modifier.weight(1f).height(72.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        contentPadding = PaddingValues(4.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (sel) BlueMain
-                            else MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = if (sel) Color.White else TextDark
-                        )
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(op.symbol, style = MaterialTheme.typography.headlineMedium)
-                            Text(op.label, style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-                }
-            }
-
-            if (settings.tablesOp == TablesOp.MUL) {
-                Text(
-                    "La table de ${settings.tableNumber} sera demandee de 0 a " +
-                        "${minOf(settings.maxValue, Settings.MUL_MAX_FACTOR)}.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
-                )
-            }
+            // Le choix de la table et de son operation vit uniquement sur
+            // l'accueil, au plus pres du bouton Demarrer. Le dupliquer ici
+            // offrirait deux chemins pour le meme reglage, sans benefice.
 
             HorizontalDivider()
 
@@ -145,6 +109,18 @@ fun SettingsSheet(
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = RedErr)
             ) { Text("Supprimer le profil") }
+
+            // Quand le message de consentement l'impose, Google exige un acces
+            // permanent et visible aux options de confidentialite. Le bouton
+            // n'apparait que dans ce cas, pour ne pas encombrer les reglages.
+            if (privacyOptionsRequired) {
+                HorizontalDivider()
+                OutlinedButton(
+                    onClick = onShowPrivacyOptions,
+                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) { Text("Confidentialite et publicite") }
+            }
 
             BigButton("Terminer", onDismiss)
         }

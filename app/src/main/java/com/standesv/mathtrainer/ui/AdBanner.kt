@@ -20,15 +20,19 @@ import com.standesv.mathtrainer.R
 /**
  * Banniere AdMob ancree en bas d'ecran.
  *
+ * [enabled] doit refleter `ConsentManager.canRequestAds` : tant qu'il est
+ * faux, aucune AdView n'est construite, donc aucune requete publicitaire
+ * n'est emise. C'est ce qui rend l'integration conforme au RGPD.
+ *
  * En build debug, l'identifiant de test officiel de Google est utilise :
  * cliquer sur ses propres annonces reelles est le motif classique de
  * suspension d'un compte AdMob.
  */
 @Composable
-fun AdBanner(modifier: Modifier = Modifier) {
-    val isPreview = LocalInspectionMode.current
-    val widthDp = LocalConfiguration.current.screenWidthDp
+fun AdBanner(enabled: Boolean, modifier: Modifier = Modifier) {
+    if (!enabled || LocalInspectionMode.current) return
 
+    val widthDp = LocalConfiguration.current.screenWidthDp
     val unitId = stringResource(
         if (BuildConfig.DEBUG) R.string.admob_banner_test_unit_id
         else R.string.admob_banner_unit_id
@@ -38,19 +42,17 @@ fun AdBanner(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxWidth().heightIn(min = 50.dp),
         contentAlignment = Alignment.Center
     ) {
-        if (!isPreview) {
-            AndroidView(
-                modifier = Modifier.fillMaxWidth(),
-                factory = { ctx ->
-                    AdView(ctx).apply {
-                        adUnitId = unitId
-                        setAdSize(
-                            AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(ctx, widthDp)
-                        )
-                        loadAd(AdRequest.Builder().build())
-                    }
+        AndroidView(
+            modifier = Modifier.fillMaxWidth(),
+            factory = { ctx ->
+                AdView(ctx).apply {
+                    adUnitId = unitId
+                    setAdSize(
+                        AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(ctx, widthDp)
+                    )
+                    loadAd(AdRequest.Builder().build())
                 }
-            )
-        }
+            }
+        )
     }
 }

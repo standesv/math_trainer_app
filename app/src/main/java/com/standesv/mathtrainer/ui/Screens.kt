@@ -1,6 +1,7 @@
 package com.standesv.mathtrainer.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,7 +30,8 @@ fun HomeScreen(
     onSelectProfile: (String) -> Unit,
     onAddProfile: () -> Unit,
     onTablesOp: (TablesOp) -> Unit,
-    onTableNumber: (Int) -> Unit
+    onTableNumber: (Int) -> Unit,
+    onOpenSettings: () -> Unit
 ) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -170,22 +172,25 @@ fun HomeScreen(
             }
         }
 
-        SoftCard {
+        // Ces valeurs se modifient dans les reglages : la carte y conduit
+        // directement, plutot que d'afficher un rappel inerte.
+        SoftCard(Modifier.clickable { onOpenSettings() }) {
             Row(
                 Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Pill("Niveau 0 → ${ui.effectiveMax}")
                 Pill("${ui.settings.totalQuestions} questions")
             }
-            if (ui.settings.progressEnabled) {
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "Palier debloque : ${ui.progress.unlockedMax}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
-                )
-            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                if (ui.settings.progressEnabled)
+                    "Palier debloque : ${ui.progress.unlockedMax} — touche pour regler"
+                else "Touche pour regler",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray
+            )
         }
 
         BigButton("Demarrer", onStart, container = GreenOk)

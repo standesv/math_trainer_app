@@ -11,7 +11,7 @@ Application Android d'entrainement aux additions et soustractions, concue pour d
 - Corrige detaille en fin de partie
 - Historique des 12 dernieres parties par profil
 - Sons de retour et confettis
-- Banniere publicitaire AdMob en bas d'ecran
+- Banniere publicitaire AdMob en bas d'ecran, soumise au consentement RGPD
 
 ## Ergonomie pensee pour les enfants
 
@@ -38,7 +38,36 @@ Gradle.
 | Interface | Jetpack Compose, Material 3 |
 | Persistance | DataStore Preferences |
 | Publicite | `play-services-ads` 23.5.0 (SDK officiel) |
+| Consentement | `user-messaging-platform` 4.0.0 (UMP) |
 | minSdk / targetSdk | 24 / 35 |
+
+## Publicite, consentement et enfants
+
+La banniere ne se charge **jamais** avant que le SDK UMP n'ait etabli que le
+consentement le permet (`ConsentManager.canRequestAds`). Sans cela, aucune
+`AdView` n'est construite et aucune requete ne part.
+
+L'application visant des enfants, la constante `ConsentManager.CHILD_DIRECTED`
+(a `true`) applique trois regles :
+
+- annonces marquees *child-directed* (COPPA) ;
+- contenu limite a la categorie **G**, tout public ;
+- utilisateur declare sous l'age du consentement, ce qui **desactive les
+  annonces personnalisees**.
+
+Consequence directe : les revenus sont nettement inferieurs a ceux d'annonces
+personnalisees. C'est le reglage prudent pour une application destinee a des
+enfants ; le modifier releve d'une decision qui appartient a l'editeur.
+
+Deux points restent a faire **hors du code**, sans quoi la conformite n'est pas
+acquise :
+
+1. Creer un message de consentement dans AdMob, onglet **Confidentialite et
+   messagerie**. Le SDK n'affiche que des messages configures la-bas ; sans
+   message, aucun formulaire ne s'affichera.
+2. Publier une politique de confidentialite et la declarer dans la fiche Play,
+   ainsi que la section **Securite des donnees**, obligatoire des qu'une regie
+   publicitaire est integree.
 
 ## Structure
 
@@ -46,6 +75,8 @@ Gradle.
 app/src/main/java/com/standesv/mathtrainer/
 ├── MainActivity.kt        navigation, assemblage des ecrans
 ├── GameViewModel.kt       etat de la partie, chronometre, progression
+├── ads/
+│   └── ConsentManager.kt  consentement RGPD (UMP) et regime enfants
 ├── data/
 │   ├── Model.kt           modes, reglages, generation des questions
 │   └── Store.kt           persistance par profil

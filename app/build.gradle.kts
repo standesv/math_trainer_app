@@ -82,4 +82,8 @@ dependencies {
 
     // SDK AdMob officiel, sans plugin intermédiaire.
     implementation("com.google.android.gms:play-services-ads:23.5.0")
+
+    // User Messaging Platform : recueil du consentement RGPD. Version tiree
+    // de la documentation officielle AdMob (developers.google.com/admob/android/privacy).
+    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
 }
