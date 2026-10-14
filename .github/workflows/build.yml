@@ -122,6 +122,37 @@ jobs:
           path: dist/*.aab
           if-no-files-found: error
 
+      # Les notes de version vivent dans CHANGELOG.md, source unique. La section
+      # correspondant au tag en est extraite pour servir de corps a la release.
+      - name: Extract release notes from CHANGELOG
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          python3 - "$APP_VERSION_NAME" <<'PY'
+          import pathlib, re, sys
+
+          version = sys.argv[1]
+          changelog = pathlib.Path('CHANGELOG.md')
+          out = pathlib.Path('RELEASE_NOTES.md')
+
+          if not changelog.exists():
+              out.write_text('', encoding='utf-8')
+              print(f'::warning::CHANGELOG.md absent')
+              raise SystemExit(0)
+
+          text = changelog.read_text(encoding='utf-8')
+          match = re.search(
+              rf'^## {re.escape(version)}\b.*?$(.*?)(?=^## |\Z)',
+              text, re.MULTILINE | re.DOTALL
+          )
+          if match:
+              out.write_text(match.group(1).strip() + '\n', encoding='utf-8')
+              print(f'Notes trouvees pour {version}')
+          else:
+              out.write_text('', encoding='utf-8')
+              print(f'::warning::Aucune section CHANGELOG pour {version}')
+          PY
+
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
@@ -129,4 +160,5 @@ jobs:
           files: |
             dist/*.apk
             dist/*.aab
+          body_path: RELEASE_NOTES.md
           generate_release_notes: true

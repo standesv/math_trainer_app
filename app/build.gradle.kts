@@ -9,7 +9,10 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.standesv.mathtrainer"
+        // Identifiant attendu par la fiche Google Play deja creee.
+        // Volontairement different de `namespace` : celui-ci reste le paquet
+        // Kotlin des sources, aucun fichier n'a donc besoin d'etre deplace.
+        applicationId = "com.mathtrainer.myapp"
         minSdk = 24
         targetSdk = 35
 

@@ -104,6 +104,10 @@ par la CI (`Maths Trainer 1.1.0`).
 
 Voir `DEPLOYMENT.md`.
 
+Les notes de version sont tenues dans `CHANGELOG.md`. La CI en extrait la
+section correspondant au tag pousse et s'en sert comme corps de la release
+GitHub : il n'y a donc qu'un seul endroit a mettre a jour.
+
 ## Auteur
 
 Stan Desvoye (@standesv)
