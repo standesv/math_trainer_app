@@ -10,7 +10,9 @@ captures/
 *.jks
 *.keystore
 *.p12
+*.pem
 keystore.b64
+Secret/
 
 # Sorties
 *.apk
