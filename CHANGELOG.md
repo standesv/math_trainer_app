@@ -6,6 +6,23 @@ et la numerotation [SemVer](https://semver.org/lang/fr/).
 
 ---
 
+## 1.7.0 — 2026-10-15
+
+### Ajoute
+
+- **Nouvelle icone** : les quatre operations `+ − × =` en couleurs vives sur un
+  degrade bleu-violet, reprenant la palette de l'application. Fournie en icone
+  adaptative (fond et premier plan separes) pour s'adapter aux masques rond,
+  carre ou en goutte des differents lanceurs.
+
+### Note
+
+Les anciennes ressources `drawable/ic_launcher_foreground.xml` et
+`values/ic_launcher_background.xml` ne sont plus referencees et peuvent etre
+supprimees.
+
+---
+
 ## 1.6.0 — 2026-10-15
 
 ### Modifie
