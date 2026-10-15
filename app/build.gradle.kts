@@ -9,10 +9,13 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        // Identifiant attendu par la fiche Google Play deja creee.
-        // Volontairement different de `namespace` : celui-ci reste le paquet
-        // Kotlin des sources, aucun fichier n'a donc besoin d'etre deplace.
-        applicationId = "com.mathtrainer.myapp"
+        // Identifiant de la fiche Google Play. Volontairement different de
+        // `namespace` : celui-ci reste le paquet Kotlin des sources, aucun
+        // fichier n'a donc besoin d'etre deplace.
+        //
+        // Un nom de package ne se reutilise pas sur Play, meme apres
+        // suppression de la fiche : ne le modifier qu'a bon escient.
+        applicationId = "com.dargio.mathstrainer"
         minSdk = 24
         targetSdk = 35
 

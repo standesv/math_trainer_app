@@ -61,9 +61,15 @@ jobs:
             echo "KEYSTORE_PASSWORD=$STORE_PASSWORD" >> "$GITHUB_ENV"
             echo "KEY_ALIAS=$ALIAS"            >> "$GITHUB_ENV"
             echo "KEY_PASSWORD=$KEY_PASSWORD"  >> "$GITHUB_ENV"
+          elif [ "${GITHUB_REF:-}" != "${GITHUB_REF#refs/tags/v}" ]; then
+            # Une cle ephemere sur un tag produit un AAB que le Play Store
+            # refusera : la cle du premier depot y est enregistree pour de bon.
+            echo "::error::Build de release sans keystore permanent."
+            echo "::error::Renseigne les secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS et ANDROID_KEY_PASSWORD."
+            exit 1
           else
             echo "::warning::Aucun keystore dans les secrets - cle ephemere generee."
-            echo "::warning::Cet APK ne pourra pas mettre a jour une installation existante."
+            echo "::warning::Build de test uniquement : ne peut pas etre publie ni mettre a jour une installation."
             keytool -genkeypair -v -keystore "$KS" -alias mathtrainer \
               -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass mathtrainer -keypass mathtrainer \

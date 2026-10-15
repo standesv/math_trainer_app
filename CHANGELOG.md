@@ -6,13 +6,14 @@ et la numerotation [SemVer](https://semver.org/lang/fr/).
 
 ---
 
-## 1.6.0 — 2026-10-14
+## 1.6.0 — 2026-10-15
 
 ### Modifie
 
-- Identifiant de l'application change en `com.mathtrainer.myapp`, pour
-  correspondre a la fiche Google Play. Le paquet Kotlin des sources reste
-  inchange.
+- Identifiant de l'application fixe a `com.dargio.mathstrainer`, pour la
+  nouvelle fiche Google Play. Le paquet Kotlin des sources reste inchange.
+- Un build sur tag echoue desormais si les secrets du keystore permanent sont
+  absents, au lieu de produire un AAB que le Play Store refuse.
 
 ### Attention
 
