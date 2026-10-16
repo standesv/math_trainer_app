@@ -33,16 +33,35 @@ jobs:
         with:
           gradle-version: '8.14.2'
 
+      # Le versionCode doit croitre strictement a chaque depot sur Play, et une
+      # valeur deja utilisee est refusee definitivement. Le numero de run
+      # GitHub ne le garantit pas : il repart de zero si le workflow est
+      # renomme, et deux runs d'un meme tag produisent des valeurs differentes.
+      # On le derive donc du numero de version : 1.8.1 -> 10801.
       - name: Compute version
         run: |
           set -euo pipefail
           case "${GITHUB_REF:-}" in
-            refs/tags/v*) NAME="${GITHUB_REF_NAME#v}" ;;
-            *)            NAME="0.0.${GITHUB_RUN_NUMBER}" ;;
+            refs/tags/v*)
+              NAME="${GITHUB_REF_NAME#v}"
+              IFS='.' read -r MA MI PA <<< "$NAME"
+              MA=${MA:-0}; MI=${MI:-0}; PA=${PA:-0}
+              CODE=$(( 10#$MA * 10000 + 10#$MI * 100 + 10#$PA ))
+              ;;
+            *)
+              NAME="0.0.${GITHUB_RUN_NUMBER}"
+              CODE="$GITHUB_RUN_NUMBER"
+              ;;
           esac
-          echo "APP_VERSION_NAME=$NAME"          >> "$GITHUB_ENV"
-          echo "APP_VERSION_CODE=$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
-          echo "Version : $NAME (code $GITHUB_RUN_NUMBER)"
+
+          if [ "$CODE" -le 0 ]; then
+            echo "::error::versionCode calcule invalide ($CODE) pour $NAME"
+            exit 1
+          fi
+
+          echo "APP_VERSION_NAME=$NAME" >> "$GITHUB_ENV"
+          echo "APP_VERSION_CODE=$CODE" >> "$GITHUB_ENV"
+          echo "Version : $NAME (code $CODE)"
 
       - name: Prepare keystore
         env:

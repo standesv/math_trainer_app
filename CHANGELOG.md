@@ -6,6 +6,17 @@ et la numerotation [SemVer](https://semver.org/lang/fr/).
 
 ---
 
+## 1.8.1 — 2026-10-16
+
+### Corrige
+
+- Le `versionCode` derive desormais du numero de version (1.8.1 → 10801) au
+  lieu du numero de run GitHub. Celui-ci ne garantissait pas la croissance
+  stricte exigee par Google Play, qui refuse definitivement un code deja
+  depose.
+
+---
+
 ## 1.8.0 — 2026-10-16
 
 ### Modifie
