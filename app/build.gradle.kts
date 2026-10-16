@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.standesv.mathtrainer"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         // Identifiant de la fiche Google Play. Volontairement different de
@@ -17,7 +17,8 @@ android {
         // suppression de la fiche : ne le modifier qu'a bon escient.
         applicationId = "com.dargio.mathstrainer"
         minSdk = 24
-        targetSdk = 35
+        // Google Play refuse desormais tout depot ciblant moins que l'API 36.
+        targetSdk = 36
 
         // Surchargés par la CI à partir du tag git (voir workflow).
         versionCode = (project.findProperty("appVersionCode") as String? ?: "1").toInt()

@@ -6,6 +6,16 @@ et la numerotation [SemVer](https://semver.org/lang/fr/).
 
 ---
 
+## 1.8.0 — 2026-10-16
+
+### Modifie
+
+- Niveau d'API cible porte de 35 a **36**, exige par Google Play pour tout
+  nouveau depot. Entraine la montee de la chaine de compilation : AGP 8.7.3 →
+  8.10.1 et Gradle 8.9 → 8.14.2, seule combinaison supportant `compileSdk 36`.
+
+---
+
 ## 1.7.0 — 2026-10-15
 
 ### Ajoute
